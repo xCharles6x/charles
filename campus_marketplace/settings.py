@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-n##i!#^@@076@m9vyf$&obwxb6$4bxg_9dnitag8-%1w2p2o+c
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['campus-marketplace-bxq1.onrender.com']
 
 
 # Application definition
