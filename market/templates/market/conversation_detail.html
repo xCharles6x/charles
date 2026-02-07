@@ -1,0 +1,323 @@
+{% extends 'market/base.html' %}
+
+{% block title %}Chat with {{ other_user.username }} - Campus Marketplace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        max-width: 1000px;
+        margin: 2rem auto;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+    }
+    
+    .chat-header {
+        background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .chat-header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .chat-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid white;
+    }
+    
+    .product-info {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1rem;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .product-info img {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    
+    .messages-container {
+        height: 500px;
+        overflow-y: auto;
+        padding: 2rem;
+        background: linear-gradient(to bottom, #f8f9fa 0%, white 100%);
+    }
+    
+    .message {
+        display: flex;
+        margin-bottom: 1.5rem;
+        animation: messageSlide 0.3s ease;
+    }
+    
+    @keyframes messageSlide {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .message.sent {
+        justify-content: flex-end;
+    }
+    
+    .message-content {
+        max-width: 70%;
+        padding: 1rem 1.5rem;
+        border-radius: 20px;
+        position: relative;
+    }
+    
+    .message.received .message-content {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        color: var(--text-dark);
+        border-bottom-left-radius: 5px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .message.sent .message-content {
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        color: white;
+        border-bottom-right-radius: 5px;
+        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+    }
+    
+    .message-text {
+        margin-bottom: 0.5rem;
+        word-wrap: break-word;
+    }
+    
+    .message-time {
+        font-size: 0.75rem;
+        opacity: 0.7;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    
+    .message.sent .message-time {
+        justify-content: flex-end;
+    }
+    
+    .message-form {
+        padding: 1.5rem;
+        background: white;
+        border-top: 2px solid #e0e0e0;
+    }
+    
+    .message-input-group {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-end;
+    }
+    
+    .message-input-group textarea {
+        flex: 1;
+        border-radius: 25px;
+        resize: none;
+        padding: 1rem 1.5rem;
+        border: 2px solid var(--primary-color);
+        font-size: 1rem;
+    }
+    
+    .message-input-group textarea:focus {
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+    }
+    
+    .send-button {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+    }
+    
+    .send-button:hover {
+        transform: scale(1.1) rotate(15deg);
+        box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+    }
+    
+    .empty-chat {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-light);
+    }
+    
+    .empty-chat i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    /* Custom Scrollbar for messages */
+    .messages-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .messages-container::-webkit-scrollbar-thumb {
+        background: var(--primary-color);
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="chat-container">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <div class="chat-header-left">
+                <a href="{% url 'conversations_list' %}" class="text-white">
+                    <i class="fas fa-arrow-left fa-lg"></i>
+                </a>
+                
+                {% if other_user.profile.avatar %}
+                <img src="{{ other_user.profile.avatar.url }}" alt="{{ other_user.username }}" class="chat-avatar">
+                {% else %}
+                <div class="chat-avatar bg-secondary d-flex align-items-center justify-content-center">
+                    <i class="fas fa-user text-white"></i>
+                </div>
+                {% endif %}
+                
+                <div>
+                    <h5 class="mb-0">{{ other_user.get_full_name|default:other_user.username }}</h5>
+                    <small>@{{ other_user.username }}</small>
+                    {% if other_user.profile.average_rating %}
+                    <div class="rating-stars" style="font-size: 0.9rem;">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= other_user.profile.average_rating|floatformat:0 %}
+                                <i class="fas fa-star"></i>
+                            {% else %}
+                                <i class="far fa-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <a href="{% url 'profile_user' other_user.username %}" class="btn btn-light btn-sm">
+                <i class="fas fa-user"></i> View Profile
+            </a>
+        </div>
+        
+        <!-- Product Info -->
+        <div class="product-info">
+            {% if conversation.product.image %}
+            <img src="{{ conversation.product.image.url }}" alt="{{ conversation.product.name }}">
+            {% else %}
+            <div style="width: 60px; height: 60px; background: #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-image"></i>
+            </div>
+            {% endif %}
+            <div class="flex-grow-1">
+                <h6 class="mb-1">About: {{ conversation.product.name }}</h6>
+                <p class="mb-0 text-white-50 small">${{ conversation.product.price }}</p>
+            </div>
+            <a href="{% url 'product_detail' conversation.product.pk %}" class="btn btn-light btn-sm">
+                <i class="fas fa-eye"></i> View
+            </a>
+        </div>
+        
+        <!-- Messages Container -->
+        <div class="messages-container" id="messagesContainer">
+            {% if messages %}
+                {% for message in messages|slice:"::-1" %}
+                <div class="message {% if message.sender == request.user %}sent{% else %}received{% endif %}">
+                    <div class="message-content">
+                        <div class="message-text">{{ message.content }}</div>
+                        <div class="message-time">
+                            <i class="far fa-clock"></i>
+                            {{ message.timestamp|date:"M d, Y g:i A" }}
+                            {% if message.sender == request.user and message.read %}
+                            <i class="fas fa-check-double" title="Read"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-chat">
+                    <i class="fas fa-comments"></i>
+                    <h4>No messages yet</h4>
+                    <p>Start the conversation!</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Message Form -->
+        <div class="message-form">
+            <form method="post" id="messageForm">
+                {% csrf_token %}
+                <div class="message-input-group">
+                    {{ form.content }}
+                    <button type="submit" class="send-button">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="text-center mt-4">
+        <a href="{% url 'rate_seller' other_user.username %}?product={{ conversation.product.pk }}" class="btn btn-outline-primary">
+            <i class="fas fa-star"></i> Rate {{ other_user.username }}
+        </a>
+        <a href="{% url 'product_detail' conversation.product.pk %}" class="btn btn-outline-secondary ms-2">
+            <i class="fas fa-shopping-bag"></i> View Product
+        </a>
+    </div>
+</div>
+
+<script>
+// Auto-scroll to bottom of messages
+const messagesContainer = document.getElementById('messagesContainer');
+messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+// Handle Enter key to send message
+document.getElementById('id_content').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('messageForm').submit();
+    }
+});
+
+// Auto-resize textarea
+const textarea = document.getElementById('id_content');
+textarea.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+
+// Refresh messages every 5 seconds for "real-time" feel
+setInterval(function() {
+    location.reload();
+}, 5000);
+</script>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends 'market/base.html' %}
+
+{% block title %}{% if action == 'Edit' %}Edit{% else %}Create{% endif %} Product - Campus Marketplace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 700px;
+        margin: 3rem auto;
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        padding: 2.5rem;
+    }
+    
+    .form-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .form-header i {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+    
+    .image-preview {
+        max-width: 300px;
+        max-height: 300px;
+        margin: 1rem 0;
+        border-radius: var(--border-radius);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="form-container">
+        <div class="form-card">
+            <div class="form-header">
+                <i class="fas fa-{% if action == 'Edit' %}edit{% else %}plus-circle{% endif %}"></i>
+                <h2>{% if action == 'Edit' %}Edit{% else %}List New{% endif %} Product</h2>
+                <p class="text-muted">{% if action == 'Edit' %}Update your product details{% else %}Add a product to sell{% endif %}</p>
+            </div>
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Product Name *</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="text-danger small">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Description *</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="text-danger small">{{ form.description.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Price ($) *</label>
+                        {{ form.price }}
+                        {% if form.price.errors %}
+                            <div class="text-danger small">{{ form.price.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-semibold">Category *</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                            <div class="text-danger small">{{ form.category.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Condition *</label>
+                    {{ form.condition }}
+                    {% if form.condition.errors %}
+                        <div class="text-danger small">{{ form.condition.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Product Image</label>
+                    {{ form.image }}
+                    {% if form.image.errors %}
+                        <div class="text-danger small">{{ form.image.errors }}</div>
+                    {% endif %}
+                    {% if product and product.image %}
+                    <div class="mt-2">
+                        <p class="small text-muted">Current image:</p>
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="image-preview">
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4">
+                    <div class="form-check">
+                        {{ form.is_available }}
+                        <label class="form-check-label" for="id_is_available">
+                            Product is available for sale
+                        </label>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-{% if action == 'Edit' %}save{% else %}plus-circle{% endif %}"></i>
+                        {% if action == 'Edit' %}Update{% else %}List{% endif %} Product
+                    </button>
+                    <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Preview image before upload
+document.getElementById('id_image').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.createElement('img');
+            preview.src = e.target.result;
+            preview.className = 'image-preview mt-2';
+            
+            const existingPreview = document.querySelector('.image-preview');
+            if (existingPreview) {
+                existingPreview.src = e.target.result;
+            } else {
+                document.getElementById('id_image').parentElement.appendChild(preview);
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+{% endblock %}

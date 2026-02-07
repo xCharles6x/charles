@@ -1,0 +1,30 @@
+{% extends 'market/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+  <h2 class="mb-4">Inbox</h2>
+
+  <div class="list-group">
+    {% for msg in messages %}
+    <div class="list-group-item list-group-item-action mb-2">
+      <div class="d-flex justify-content-between">
+        <div>
+          <strong>From:</strong> {{ msg.sender.username }}<br>
+          <strong>To:</strong> {{ msg.receiver.username }}<br>
+          {% if msg.product %}
+          <strong>Regarding:</strong> {{ msg.product.name }}<br>
+          {% endif %}
+        </div>
+        <small class="text-muted">{{ msg.timestamp|date:"M d, Y H:i" }}</small>
+      </div>
+      <p class="mt-2">{{ msg.content }}</p>
+      {% if msg.sender != user %}
+      <a href="{% url 'market:send_message' msg.sender.id msg.product.id %}" class="btn btn-sm btn-primary">Reply</a>
+      {% endif %}
+    </div>
+    {% empty %}
+    <p>You have no messages yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

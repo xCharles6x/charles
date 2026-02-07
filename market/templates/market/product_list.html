@@ -1,0 +1,241 @@
+{% extends 'market/base.html' %}
+
+{% block title %}Browse Products - Campus Marketplace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filters-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        position: sticky;
+        top: 100px;
+    }
+    
+    .filter-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .filter-section h6 {
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">
+        <i class="fas fa-store"></i> Browse Products
+    </h1>
+
+    <div class="row">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="filters-card">
+                <h5 class="mb-3">
+                    <i class="fas fa-filter"></i> Filters
+                </h5>
+                
+                <form method="get" id="filterForm">
+                    <!-- Search -->
+                    <div class="filter-section">
+                        <h6>Search</h6>
+                        <input type="text" name="q" class="form-control" placeholder="Search products..." value="{{ query }}">
+                    </div>
+                    
+                    <!-- Category Filter -->
+                    <div class="filter-section">
+                        <h6>Category</h6>
+                        <select name="category" class="form-select" onchange="this.form.submit()">
+                            <option value="">All Categories</option>
+                            {% for value, label in categories %}
+                                <option value="{{ value }}" {% if category == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Condition Filter -->
+                    <div class="filter-section">
+                        <h6>Condition</h6>
+                        <select name="condition" class="form-select" onchange="this.form.submit()">
+                            <option value="">All Conditions</option>
+                            {% for value, label in conditions %}
+                                <option value="{{ value }}" {% if condition == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Sort Filter -->
+                    <div class="filter-section">
+                        <h6>Sort By</h6>
+                        <select name="sort" class="form-select" onchange="this.form.submit()">
+                            <option value="-created_at" {% if sort == '-created_at' %}selected{% endif %}>Newest First</option>
+                            <option value="price_low" {% if sort == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                            <option value="price_high" {% if sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                            <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Most Popular</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'product_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-undo"></i> Clear All
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <p class="text-muted mb-0">
+                    Showing {% if page_obj %}{{ page_obj|length }}{% else %}0{% endif %} products
+                </p>
+            </div>
+
+            {% if page_obj %}
+                <div class="product-grid">
+                    {% for product in page_obj %}
+                    <div class="card">
+                        <a href="{% url 'product_detail' product.pk %}">
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                            {% else %}
+                            <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 250px;">
+                                <i class="fas fa-image fa-3x text-white"></i>
+                            </div>
+                            {% endif %}
+                        </a>
+                        
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">
+                                    <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none text-dark">
+                                        {{ product.name|truncatewords:5 }}
+                                    </a>
+                                </h5>
+                                <span class="badge badge-primary">${{ product.price }}</span>
+                            </div>
+                            
+                            <p class="card-text text-muted small">{{ product.description|truncatewords:10 }}</p>
+                            
+                            <div class="mb-2">
+                                <span class="badge" style="background: var(--secondary-color); font-size: 0.75rem;">
+                                    {{ product.get_category_display }}
+                                </span>
+                                <span class="badge bg-light text-dark" style="font-size: 0.75rem;">
+                                    {{ product.get_condition_display }}
+                                </span>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> {{ product.seller.username }}
+                                </small>
+                                <small class="text-muted">
+                                    <i class="fas fa-eye"></i> {{ product.views_count }}
+                                </small>
+                            </div>
+                            
+                            {% if user.is_authenticated and user != product.seller %}
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary btn-sm flex-grow-1" onclick="addToCart({{ product.pk }})">
+                                    <i class="fas fa-cart-plus"></i> Cart
+                                </button>
+                                <a href="{% url 'start_conversation' product.pk %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-comment"></i>
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Page navigation" class="mt-5">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}{% if category %}&category={{ category }}{% endif %}{% if condition %}&condition={{ condition }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if category %}&category={{ category }}{% endif %}{% if condition %}&condition={{ condition }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if category %}&category={{ category }}{% endif %}{% if condition %}&condition={{ condition }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if category %}&category={{ category }}{% endif %}{% if condition %}&condition={{ condition }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                    <h3 class="text-muted">No products found</h3>
+                    <p class="text-muted">Try adjusting your filters or search terms</p>
+                    <a href="{% url 'product_list' %}" class="btn btn-primary mt-3">
+                        <i class="fas fa-undo"></i> Clear Filters
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function addToCart(productId) {
+    fetch(`/cart/add/${productId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✓ Product added to cart!');
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to add to cart');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to add to cart');
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'market/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm text-center p-4">
+        <h2 class="text-success mb-3">Order Placed Successfully!</h2>
+        <p>Thank you, <strong>{{ fullname }}</strong>, for your order.</p>
+        <p>Your items will be shipped soon.</p>
+        <a href="{% url 'market:home' %}" class="btn btn-primary mt-3">Continue Shopping</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

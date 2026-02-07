@@ -1,0 +1,302 @@
+{% extends 'market/base.html' %}
+
+{% block title %}{{ user_profile.get_full_name|default:user_profile.username }}'s Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+        color: white;
+        padding: 3rem 0;
+        border-radius: 0 0 50px 50px;
+        margin-bottom: 3rem;
+    }
+    
+    .profile-card {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow);
+        transform: translateY(-50px);
+        margin-bottom: 2rem;
+    }
+    
+    .profile-avatar-large {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 5px solid white;
+        box-shadow: var(--shadow);
+        margin-top: -75px;
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        font-family: 'Fraunces', serif;
+    }
+    
+    .rating-card {
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow);
+        transition: all 0.3s ease;
+    }
+    
+    .rating-card:hover {
+        box-shadow: var(--shadow-hover);
+    }
+    
+    .review-stars {
+        color: var(--accent-color);
+        font-size: 1.3rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-header">
+    <div class="container text-center">
+        <h1 class="display-4">Profile</h1>
+    </div>
+</div>
+
+<div class="container">
+    <div class="profile-card text-center">
+        <div class="mb-4">
+            {% if profile.avatar %}
+            <img src="{{ profile.avatar.url }}" alt="{{ user_profile.username }}" class="profile-avatar-large">
+            {% else %}
+            <div class="profile-avatar-large bg-secondary d-inline-flex align-items-center justify-content-center" style="margin-top: -75px;">
+                <i class="fas fa-user fa-4x text-white"></i>
+            </div>
+            {% endif %}
+        </div>
+        
+        <h2>{{ user_profile.get_full_name|default:user_profile.username }}</h2>
+        <p class="text-muted">@{{ user_profile.username }}</p>
+        
+        <div class="mb-3">
+            <span class="badge badge-primary">{{ profile.get_role_display }}</span>
+        </div>
+        
+        {% if avg_rating %}
+        <div class="rating-stars mb-3">
+            {% for i in "12345" %}
+                {% if forloop.counter <= avg_rating|floatformat:0 %}
+                    <i class="fas fa-star"></i>
+                {% else %}
+                    <i class="far fa-star"></i>
+                {% endif %}
+            {% endfor %}
+            <span class="ms-2 text-dark">({{ avg_rating|floatformat:1 }}/5 from {{ total_ratings }} reviews)</span>
+        </div>
+        {% else %}
+        <p class="text-muted">No ratings yet</p>
+        {% endif %}
+        
+        {% if profile.bio %}
+        <p class="lead">{{ profile.bio }}</p>
+        {% endif %}
+        
+        <div class="row g-3 mt-3">
+            {% if profile.location %}
+            <div class="col-md-4">
+                <i class="fas fa-map-marker-alt text-primary"></i>
+                {{ profile.location }}
+            </div>
+            {% endif %}
+            {% if profile.phone %}
+            <div class="col-md-4">
+                <i class="fas fa-phone text-primary"></i>
+                {{ profile.phone }}
+            </div>
+            {% endif %}
+            <div class="col-md-4">
+                <i class="fas fa-calendar text-primary"></i>
+                Joined {{ profile.created_at|date:"M Y" }}
+            </div>
+        </div>
+        
+        {% if is_own_profile %}
+        <div class="mt-4">
+            <a href="{% url 'profile_edit' %}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Edit Profile
+            </a>
+        </div>
+        {% else %}
+        <div class="mt-4">
+            <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#contactModal">
+                <i class="fas fa-envelope"></i> Contact Seller
+            </a>
+            <a href="{% url 'rate_seller' user_profile.username %}" class="btn btn-outline-primary">
+                <i class="fas fa-star"></i> Rate Seller
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Stats Section -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="stats-card">
+                <div class="stats-number">{{ products.count }}</div>
+                <div class="text-muted">Products Listed</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <div class="stats-number">{{ total_ratings }}</div>
+                <div class="text-muted">Total Ratings</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <div class="stats-number">
+                    {% if avg_rating %}{{ avg_rating|floatformat:1 }}{% else %}N/A{% endif %}
+                </div>
+                <div class="text-muted">Average Rating</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Products Section -->
+    <section class="mb-5">
+        <h3 class="mb-4">
+            <i class="fas fa-box"></i> 
+            {% if is_own_profile %}My{% else %}{{ user_profile.username }}'s{% endif %} Products
+        </h3>
+        
+        {% if products %}
+        <div class="product-grid">
+            {% for product in products %}
+            <div class="card">
+                <a href="{% url 'product_detail' product.pk %}">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                    {% else %}
+                    <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 250px;">
+                        <i class="fas fa-image fa-3x text-white"></i>
+                    </div>
+                    {% endif %}
+                </a>
+                
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none text-dark">
+                            {{ product.name }}
+                        </a>
+                    </h5>
+                    <p class="card-text text-muted">{{ product.description|truncatewords:10 }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="h4 text-primary mb-0">${{ product.price }}</span>
+                        {% if product.is_available %}
+                        <span class="badge bg-success">Available</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Sold</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if is_own_profile %}
+                    <div class="mt-3">
+                        <a href="{% url 'product_edit' product.pk %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="{% url 'product_delete' product.pk %}" class="btn btn-outline-danger btn-sm">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">No products listed yet</h4>
+            {% if is_own_profile %}
+            <a href="{% url 'product_create' %}" class="btn btn-primary mt-3">
+                <i class="fas fa-plus"></i> List Your First Product
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </section>
+    
+    <!-- Ratings & Reviews Section -->
+    {% if ratings %}
+    <section class="mb-5">
+        <h3 class="mb-4">
+            <i class="fas fa-star"></i> Reviews ({{ ratings.count }})
+        </h3>
+        
+        {% for rating in ratings %}
+        <div class="rating-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    <strong>{{ rating.buyer.username }}</strong>
+                    {% if rating.product %}
+                    <small class="text-muted">
+                        - about <a href="{% url 'product_detail' rating.product.pk %}">{{ rating.product.name }}</a>
+                    </small>
+                    {% endif %}
+                </div>
+                <small class="text-muted">{{ rating.created_at|date:"M d, Y" }}</small>
+            </div>
+            
+            <div class="review-stars mb-2">
+                {% for i in "12345" %}
+                    {% if forloop.counter <= rating.rating %}
+                        <i class="fas fa-star"></i>
+                    {% else %}
+                        <i class="far fa-star"></i>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            
+            {% if rating.review %}
+            <p class="mb-0">{{ rating.review }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+</div>
+
+<!-- Contact Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Contact {{ user_profile.username }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>To contact this seller, please view one of their products and start a conversation.</p>
+                <a href="{% url 'product_list' %}?seller={{ user_profile.username }}" class="btn btn-primary w-100">
+                    <i class="fas fa-box"></i> View Products
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

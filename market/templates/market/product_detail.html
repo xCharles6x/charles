@@ -1,0 +1,237 @@
+{% extends 'market/base.html' %}
+
+{% block title %}{{ product.name }} - Campus Marketplace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-image {
+        width: 100%;
+        height: 500px;
+        object-fit: cover;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+    }
+    
+    .seller-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 2rem;
+    }
+    
+    .price-tag {
+        font-size: 2.5rem;
+        color: var(--primary-color);
+        font-weight: 700;
+        font-family: 'Fraunces', serif;
+    }
+    
+    .badge-category {
+        background: var(--secondary-color);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+    }
+    
+    .badge-condition {
+        background: var(--success-color);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Product Image -->
+        <div class="col-lg-6 mb-4">
+            {% if product.image %}
+                <img src="{{ product.image.url }}" class="product-image" alt="{{ product.name }}">
+            {% else %}
+                <div class="product-image bg-secondary d-flex align-items-center justify-content-center">
+                    <i class="fas fa-image fa-5x text-white"></i>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Product Details -->
+        <div class="col-lg-6">
+            <div class="mb-3">
+                <span class="badge badge-category">
+                    <i class="fas fa-tag"></i> {{ product.get_category_display }}
+                </span>
+                <span class="badge badge-condition ms-2">
+                    {{ product.get_condition_display }}
+                </span>
+            </div>
+            
+            <h1 class="mb-3">{{ product.name }}</h1>
+            
+            <div class="price-tag mb-4">${{ product.price }}</div>
+            
+            <div class="mb-4">
+                <h5>Description</h5>
+                <p class="text-muted">{{ product.description }}</p>
+            </div>
+            
+            <div class="mb-4">
+                <small class="text-muted">
+                    <i class="fas fa-eye"></i> {{ product.views_count }} views
+                    <span class="mx-2">•</span>
+                    <i class="fas fa-clock"></i> Posted {{ product.created_at|timesince }} ago
+                </small>
+            </div>
+
+            <!-- Action Buttons -->
+            {% if user.is_authenticated %}
+                {% if user != product.seller %}
+                <div class="d-grid gap-2 mb-3">
+                    <button class="btn btn-primary btn-lg" onclick="addToCart({{ product.pk }})">
+                        <i class="fas fa-cart-plus"></i> Add to Cart
+                    </button>
+                    <a href="{% url 'start_conversation' product.pk %}" class="btn btn-secondary btn-lg">
+                        <i class="fas fa-comments"></i> Message Seller
+                    </a>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> This is your product
+                </div>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'product_edit' product.pk %}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Edit Product
+                    </a>
+                    <a href="{% url 'product_delete' product.pk %}" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete Product
+                    </a>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <a href="{% url 'login' %}">Login</a> to add to cart or message the seller
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Seller Information -->
+    <div class="row mt-5">
+        <div class="col-lg-12">
+            <div class="seller-card">
+                <h4 class="mb-3">
+                    <i class="fas fa-user"></i> Seller Information
+                </h4>
+                <div class="d-flex align-items-center">
+                    {% if seller_profile.avatar %}
+                    <img src="{{ seller_profile.avatar.url }}" alt="{{ product.seller.username }}" class="rounded-circle me-3" style="width: 80px; height: 80px; object-fit: cover;">
+                    {% else %}
+                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-3" style="width: 80px; height: 80px;">
+                        <i class="fas fa-user fa-2x text-white"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1">
+                            <a href="{% url 'profile_user' product.seller.username %}" class="text-decoration-none">
+                                {{ product.seller.get_full_name|default:product.seller.username }}
+                            </a>
+                        </h5>
+                        <p class="text-muted mb-1">@{{ product.seller.username }}</p>
+                        
+                        {% if avg_rating %}
+                        <div class="rating-stars">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= avg_rating|floatformat:0 %}
+                                    <i class="fas fa-star"></i>
+                                {% else %}
+                                    <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                            <span class="text-dark ms-2">({{ avg_rating|floatformat:1 }}/5 from {{ total_ratings }} reviews)</span>
+                        </div>
+                        {% else %}
+                        <p class="text-muted mb-0">No ratings yet</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <a href="{% url 'profile_user' product.seller.username %}" class="btn btn-outline-primary">
+                            <i class="fas fa-eye"></i> View Profile
+                        </a>
+                        {% if user.is_authenticated and user != product.seller %}
+                        <a href="{% url 'rate_seller' product.seller.username %}?product={{ product.pk }}" class="btn btn-outline-secondary ms-2">
+                            <i class="fas fa-star"></i> Rate Seller
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Similar Products -->
+    {% if similar_products %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="mb-4">
+                <i class="fas fa-boxes"></i> Similar Products
+            </h3>
+            <div class="row">
+                {% for similar in similar_products %}
+                <div class="col-md-3 mb-4">
+                    <div class="card h-100">
+                        <a href="{% url 'product_detail' similar.pk %}">
+                            {% if similar.image %}
+                            <img src="{{ similar.image.url }}" class="card-img-top" alt="{{ similar.name }}">
+                            {% else %}
+                            <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-image fa-3x text-white"></i>
+                            </div>
+                            {% endif %}
+                        </a>
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <a href="{% url 'product_detail' similar.pk %}" class="text-decoration-none text-dark">
+                                    {{ similar.name|truncatewords:5 }}
+                                </a>
+                            </h6>
+                            <p class="text-primary fw-bold mb-0">${{ similar.price }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function addToCart(productId) {
+    fetch(`/cart/add/${productId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('✓ Product added to cart!');
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to add to cart');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to add to cart');
+    });
+}
+</script>
+{% endblock %}

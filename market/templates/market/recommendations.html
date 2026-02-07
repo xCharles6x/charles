@@ -1,0 +1,183 @@
+{% extends 'market/base.html' %}
+
+{% block title %}Recommended For You - Campus Marketplace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .recommendations-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        color: white;
+        padding: 3rem 0;
+        border-radius: 0 0 50px 50px;
+        margin-bottom: 3rem;
+        text-align: center;
+    }
+    
+    .magic-wand {
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-10px) rotate(5deg); }
+    }
+    
+    .recommendation-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 0.8rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="recommendations-header">
+    <div class="container">
+        <i class="fas fa-magic fa-3x mb-3 magic-wand"></i>
+        <h1 class="display-4">Recommended For You</h1>
+        <p class="lead">Personalized picks based on your interests and browsing history</p>
+    </div>
+</div>
+
+<div class="container">
+    {% if recommended_products %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>How we personalize:</strong> We analyze your browsing history, cart items, and interests to suggest products you'll love!
+            </div>
+        </div>
+    </div>
+    
+    <div class="product-grid">
+        {% for product in recommended_products %}
+        <div class="card" style="position: relative;">
+            <span class="recommendation-badge">
+                <i class="fas fa-sparkles"></i> For You
+            </span>
+            
+            <a href="{% url 'product_detail' product.pk %}">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                {% else %}
+                <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 250px;">
+                    <i class="fas fa-image fa-3x text-white"></i>
+                </div>
+                {% endif %}
+            </a>
+            
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">
+                        <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none text-dark">
+                            {{ product.name|truncatewords:5 }}
+                        </a>
+                    </h5>
+                    <span class="badge badge-primary">${{ product.price }}</span>
+                </div>
+                
+                <p class="card-text text-muted small">{{ product.description|truncatewords:10 }}</p>
+                
+                <div class="mb-3">
+                    <span class="badge" style="background: var(--secondary-color);">
+                        {{ product.get_category_display }}
+                    </span>
+                    <span class="badge bg-light text-dark">
+                        {{ product.get_condition_display }}
+                    </span>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <small class="text-muted">
+                        <i class="fas fa-user"></i> {{ product.seller.username }}
+                    </small>
+                    <small class="text-muted">
+                        <i class="fas fa-eye"></i> {{ product.views_count }}
+                    </small>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary btn-sm flex-grow-1" onclick="addToCart({{ product.pk }})">
+                        <i class="fas fa-cart-plus"></i> Add to Cart
+                    </button>
+                    <a href="{% url 'start_conversation' product.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-comment"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-robot fa-4x text-muted mb-3"></i>
+        <h3 class="text-muted">Building Your Recommendations</h3>
+        <p class="text-muted">Browse more products to get personalized recommendations!</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary mt-3">
+            <i class="fas fa-store"></i> Browse Products
+        </a>
+    </div>
+    {% endif %}
+    
+    <!-- Tips Section -->
+    <section class="mt-5 py-5" style="background: white; border-radius: 30px; box-shadow: var(--shadow);">
+        <div class="container">
+            <h3 class="text-center mb-4">
+                <i class="fas fa-lightbulb"></i> Get Better Recommendations
+            </h3>
+            <div class="row g-4">
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-eye fa-3x mb-3" style="color: var(--primary-color);"></i>
+                    <h5>View Products</h5>
+                    <p class="text-muted">Browse items you're interested in to help us understand your preferences</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-shopping-cart fa-3x mb-3" style="color: var(--secondary-color);"></i>
+                    <h5>Add to Cart</h5>
+                    <p class="text-muted">Items in your cart help us suggest similar products</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <i class="fas fa-heart fa-3x mb-3" style="color: var(--accent-color);"></i>
+                    <h5>Be Active</h5>
+                    <p class="text-muted">The more you engage, the better we can personalize your experience</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+function addToCart(productId) {
+    fetch(`/cart/add/${productId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Product added to cart!');
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to add to cart');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to add to cart');
+    });
+}
+</script>
+{% endblock %}
+    

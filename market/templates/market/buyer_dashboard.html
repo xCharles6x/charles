@@ -1,0 +1,33 @@
+{% extends 'market/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+  <h2 class="mb-4">Buyer Dashboard</h2>
+  <div class="row">
+    {% for product in products %}
+    <div class="col-md-4 mb-4">
+      <div class="card h-100">
+        {% if product.image %}
+          <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+        {% else %}
+          <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="{{ product.name }}">
+        {% endif %}
+        <div class="card-body d-flex flex-column">
+          <h5 class="card-title">{{ product.name }}</h5>
+          <p class="card-text">{{ product.description|truncatechars:80 }}</p>
+          <p class="card-text"><strong>₱{{ product.price }}</strong></p>
+          {% if user.is_authenticated and user != product.seller %}
+          <div class="mt-auto">
+            <a href="{% url 'market:add_to_cart' product.pk %}" class="btn btn-success btn-sm me-2">Add to Cart</a>
+            <a href="{% url 'market:send_message' product.seller.id product.pk %}" class="btn btn-primary btn-sm">Message Seller</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <p>No products available from other sellers.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

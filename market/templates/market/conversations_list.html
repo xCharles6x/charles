@@ -1,0 +1,125 @@
+{% extends 'market/base.html' %}
+
+{% block title %}Messages - Campus Marketplace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .conversation-item {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border-left: 4px solid transparent;
+    }
+    
+    .conversation-item:hover {
+        box-shadow: var(--shadow-hover);
+        border-left-color: var(--primary-color);
+    }
+    
+    .conversation-item.unread {
+        border-left-color: var(--primary-color);
+        background: #fff8f5;
+    }
+    
+    .conversation-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .unread-badge {
+        background: var(--danger-color);
+        color: white;
+        border-radius: 20px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">
+        <i class="fas fa-comments"></i> Messages
+    </h1>
+
+    {% if conversations %}
+        {% for conversation in conversations %}
+        <a href="{% url 'conversation_detail' conversation.pk %}" class="text-decoration-none">
+            <div class="conversation-item {% if conversation.unread > 0 %}unread{% endif %}">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        {% if conversation.buyer == request.user %}
+                            {% if conversation.seller.profile.avatar %}
+                            <img src="{{ conversation.seller.profile.avatar.url }}" alt="{{ conversation.seller.username }}" class="conversation-avatar">
+                            {% else %}
+                            <div class="conversation-avatar bg-secondary d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user fa-2x text-white"></i>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            {% if conversation.buyer.profile.avatar %}
+                            <img src="{{ conversation.buyer.profile.avatar.url }}" alt="{{ conversation.buyer.username }}" class="conversation-avatar">
+                            {% else %}
+                            <div class="conversation-avatar bg-secondary d-flex align-items-center justify-content-center">
+                                <i class="fas fa-user fa-2x text-white"></i>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h5 class="mb-1">
+                                    {% if conversation.buyer == request.user %}
+                                        {{ conversation.seller.get_full_name|default:conversation.seller.username }}
+                                    {% else %}
+                                        {{ conversation.buyer.get_full_name|default:conversation.buyer.username }}
+                                    {% endif %}
+                                </h5>
+                                <p class="text-muted small mb-0">
+                                    <i class="fas fa-box"></i> About: {{ conversation.product.name }}
+                                </p>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted">{{ conversation.updated_at|timesince }} ago</small>
+                                {% if conversation.unread > 0 %}
+                                <div class="mt-1">
+                                    <span class="unread-badge">{{ conversation.unread }} new</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% with last_message=conversation.get_last_message %}
+                        {% if last_message %}
+                        <p class="text-muted mb-0">
+                            <strong>{% if last_message.sender == request.user %}You:{% else %}{{ last_message.sender.username }}:{% endif %}</strong>
+                            {{ last_message.content|truncatewords:15 }}
+                        </p>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-inbox fa-5x text-muted mb-4"></i>
+        <h2 class="text-muted mb-3">No conversations yet</h2>
+        <p class="text-muted mb-4">Start chatting with sellers about products you're interested in!</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-store"></i> Browse Products
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

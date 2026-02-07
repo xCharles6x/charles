@@ -1,0 +1,147 @@
+{% extends 'market/base.html' %}
+
+{% block title %}Shopping Cart - Campus Marketplace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cart-item {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .cart-item:hover {
+        box-shadow: var(--shadow-hover);
+    }
+    
+    .cart-item-image {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 12px;
+    }
+    
+    .cart-summary {
+        background: white;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        position: sticky;
+        top: 100px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">
+        <i class="fas fa-shopping-cart"></i> Shopping Cart
+    </h1>
+
+    {% if cart_items %}
+    <div class="row">
+        <!-- Cart Items -->
+        <div class="col-lg-8">
+            {% for item in cart_items %}
+            <div class="cart-item">
+                <div class="row align-items-center">
+                    <div class="col-md-2">
+                        {% if item.product.image %}
+                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="cart-item-image">
+                        {% else %}
+                        <div class="cart-item-image bg-secondary d-flex align-items-center justify-content-center">
+                            <i class="fas fa-image text-white"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <h5>
+                            <a href="{% url 'product_detail' item.product.pk %}" class="text-decoration-none text-dark">
+                                {{ item.product.name }}
+                            </a>
+                        </h5>
+                        <p class="text-muted small mb-0">
+                            <i class="fas fa-user"></i> {{ item.product.seller.username }}
+                        </p>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <strong>${{ item.product.price }}</strong>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <form method="post" action="{% url 'cart_update' item.pk %}" class="d-flex">
+                            {% csrf_token %}
+                            <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="form-control form-control-sm me-2" style="width: 70px;">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div class="col-md-2 text-end">
+                        <div class="mb-2">
+                            <strong class="text-primary">${{ item.get_total_price }}</strong>
+                        </div>
+                        <form method="post" action="{% url 'cart_remove' item.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Cart Summary -->
+        <div class="col-lg-4">
+            <div class="cart-summary">
+                <h4 class="mb-4">Order Summary</h4>
+                
+                <div class="d-flex justify-content-between mb-3">
+                    <span>Subtotal ({{ cart_items.count }} items):</span>
+                    <strong>${{ total|floatformat:2 }}</strong>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between mb-4">
+                    <h5>Total:</h5>
+                    <h5 class="text-primary">${{ total|floatformat:2 }}</h5>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-primary btn-lg" onclick="alert('Checkout coming soon!'); return false;">
+                        <i class="fas fa-check-circle"></i> Proceed to Checkout
+                    </a>
+                    <a href="{% url 'product_list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-shopping-bag"></i> Continue Shopping
+                    </a>
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-lock"></i> Secure checkout
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-shopping-cart fa-5x text-muted mb-4"></i>
+        <h2 class="text-muted mb-3">Your cart is empty</h2>
+        <p class="text-muted mb-4">Looks like you haven't added anything to your cart yet</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-store"></i> Start Shopping
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
